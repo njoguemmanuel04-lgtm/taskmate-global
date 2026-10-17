@@ -269,6 +269,7 @@
       place-items: center;
       z-index: 100;
       padding: 20px;
+      overflow-y: auto;
     }
     .modal-backdrop.open { display: grid; }
     .modal {
@@ -279,6 +280,7 @@
       padding: 25px;
       box-shadow: 0 20px 40px rgba(0,0,0,0.15);
       animation: modalFade .2s ease-out;
+      margin: auto;
     }
     @keyframes modalFade {
       from { opacity: 0; transform: translateY(10px); }
@@ -305,6 +307,26 @@
       border-color: var(--green);
     }
     .form-group textarea { resize: vertical; height: 90px; }
+
+    /* Photo Preview Styles */
+    .photo-preview-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-top: 8px;
+    }
+    .profile-photo-preview {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: var(--mint);
+      border: 2px solid var(--green);
+      display: grid;
+      place-items: center;
+      color: var(--dark);
+      font-size: 20px;
+    }
 
     footer {
       background: white;
@@ -469,6 +491,39 @@
     </div>
   </div>
 
+  <!-- Worker Registration / Career Modal -->
+  <div class="modal-backdrop" id="workerModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Worker Registration</h3>
+        <button class="close-btn" id="closeWorkerModal">&times;</button>
+      </div>
+      <form id="workerForm">
+        <div class="form-group">
+          <label for="workerName">Full Name</label>
+          <input type="text" id="workerName" placeholder="e.g., Jane Doe" required>
+        </div>
+        <div class="form-group">
+          <label for="workerCareer">Career / Specialization</label>
+          <input type="text" id="workerCareer" placeholder="e.g., Expert Plumber & Electrician" required>
+        </div>
+        <div class="form-group">
+          <label for="workerBio">Professional Bio & Experience</label>
+          <textarea id="workerBio" placeholder="Tell clients about your skills and experience..." required></textarea>
+        </div>
+        <div class="form-group">
+          <label for="workerPhoto">Upload Photo</label>
+          <input type="file" id="workerPhoto" accept="image/*" required>
+          <div class="photo-preview-wrapper">
+            <div class="profile-photo-preview" id="photoPreview">📷</div>
+            <span style="font-size:12px; color:var(--muted);">Upload a clear photo of yourself</span>
+          </div>
+        </div>
+        <button type="submit" class="btn primary" style="width: 100%;">Complete Registration</button>
+      </form>
+    </div>
+  </div>
+
   <footer>
     <div class="foot">
       <span><strong style="color:#064e3b">TaskMate</strong> — Real people. Real skills. Real work.</span>
@@ -508,6 +563,7 @@
     const jobGrid = document.getElementById("jobGrid");
     const notice = document.getElementById("notice");
     const jobModal = document.getElementById("jobModal");
+    const workerModal = document.getElementById("workerModal");
 
     function showNotice(message) {
       notice.textContent = message;
@@ -517,6 +573,9 @@
 
     function openModal() { jobModal.classList.add("open"); }
     function closeModal() { jobModal.classList.remove("open"); }
+
+    function openWorkerModal() { workerModal.classList.add("open"); }
+    function closeWorkerModal() { workerModal.classList.remove("open"); }
 
     async function fetchJobs() {
       try {
@@ -594,6 +653,36 @@
     document.getElementById("closeModal").addEventListener("click", closeModal);
     jobModal.addEventListener("click", (e) => { if (e.target === jobModal) closeModal(); });
 
+    // Worker Modal Action Handlers
+    document.getElementById("workerBtn").addEventListener("click", openWorkerModal);
+    document.getElementById("joinBtn").addEventListener("click", openWorkerModal);
+    document.getElementById("closeWorkerModal").addEventListener("click", closeWorkerModal);
+    workerModal.addEventListener("click", (e) => { if (e.target === workerModal) closeWorkerModal(); });
+
+    // Photo Preview Handler
+    document.getElementById("workerPhoto").addEventListener("change", function(e) {
+      const file = e.target.files[0];
+      const preview = document.getElementById("photoPreview");
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          preview.innerHTML = `<img src="${event.target.result}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // Submit Worker Form
+    document.getElementById("workerForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const name = document.getElementById("workerName").value;
+      const career = document.getElementById("workerCareer").value;
+      closeWorkerModal();
+      document.getElementById("workerForm").reset();
+      document.getElementById("photoPreview").innerHTML = "📷";
+      showNotice(`Success! Worker profile registered for ${name} (${career}).`);
+    });
+
     // Submit Job Form logic with API fallback
     document.getElementById("postJobForm").addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -656,8 +745,6 @@
     });
 
     document.getElementById("loginBtn").addEventListener("click", () => showNotice("Login will be connected to secure authentication in the next stage."));
-    document.getElementById("workerBtn").addEventListener("click", () => showNotice("Worker registration and applications will be added in the next stage."));
-    document.getElementById("joinBtn").addEventListener("click", () => showNotice("Worker sign-up will be enabled after authentication is connected."));
 
     document.getElementById("year").textContent = new Date().getFullYear();
     renderCategories();
