@@ -200,12 +200,12 @@
       font-size: 13px;
     }
     .filter.active { background: var(--dark); color: white; border-color: var(--dark); }
-    .jobs {
+    .jobs, .workers-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 14px;
     }
-    .job {
+    .job, .worker-card {
       border: 1px solid var(--border);
       background: white;
       padding: 20px;
@@ -231,8 +231,8 @@
       font-weight: 700;
       height: fit-content;
     }
-    .job h3 { font-size: 17px; margin: 16px 0 8px; }
-    .job p { color: var(--muted); font-size: 13px; line-height: 1.6; }
+    .job h3, .worker-card h3 { font-size: 17px; margin: 16px 0 8px; }
+    .job p, .worker-card p { color: var(--muted); font-size: 13px; line-height: 1.6; }
     .jobmeta {
       display: flex;
       justify-content: space-between;
@@ -244,6 +244,29 @@
     }
     .price { color: var(--dark); font-weight: 850; }
     .location { font-size: 12px; color: var(--muted); margin-top: 5px; }
+
+    /* Worker Profile Card Display */
+    .worker-top {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .worker-avatar {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: var(--mint);
+      border: 2px solid var(--green);
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      color: var(--dark);
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .worker-title-info h3 { margin: 0 0 4px 0; font-size: 16px; }
+    .worker-career { color: var(--green); font-size: 13px; font-weight: 700; }
 
     .banner {
       margin-top: 42px;
@@ -365,7 +388,7 @@
       .search .btn { width: 100%; }
       .categories { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
       .category { padding: 13px 9px; }
-      .jobs { grid-template-columns: 1fr; }
+      .jobs, .workers-grid { grid-template-columns: 1fr; }
       .banner { align-items: flex-start; flex-direction: column; }
     }
     @media(max-width: 360px) {
@@ -383,6 +406,7 @@
       </a>
       <div class="navlinks">
         <a class="hide-mobile" href="#categories">Explore</a>
+        <a class="hide-mobile" href="#workers">Find workers</a>
         <a class="hide-mobile" href="#jobs">Find work</a>
         <button class="btn outline" id="loginBtn">Log in</button>
         <button class="btn primary" id="postTop">Post a job</button>
@@ -417,9 +441,20 @@
           <h2>Explore services</h2>
           <p class="sub">Find the skills you need, all in one place.</p>
         </div>
-        <a class="link" href="#jobs">Browse jobs →</a>
+        <a class="link" href="#workers">Explore workers →</a>
       </div>
       <div class="categories" id="categoryGrid"></div>
+    </section>
+
+    <!-- Skilled Workers Section -->
+    <section id="workers">
+      <div class="section-head">
+        <div>
+          <h2>Available Professionals</h2>
+          <p class="sub">Browse top-rated professionals and hire directly.</p>
+        </div>
+      </div>
+      <div class="workers-grid" id="workerGrid"></div>
     </section>
 
     <section id="jobs">
@@ -501,11 +536,11 @@
       <form id="workerForm">
         <div class="form-group">
           <label for="workerName">Full Name</label>
-          <input type="text" id="workerName" placeholder="e.g., Jane Doe" required>
+          <input type="text" id="workerName" placeholder="e.g., Emmanuel" required>
         </div>
         <div class="form-group">
           <label for="workerCareer">Career / Specialization</label>
-          <input type="text" id="workerCareer" placeholder="e.g., Expert Plumber & Electrician" required>
+          <input type="text" id="workerCareer" placeholder="e.g., Plumber & Pipefitter" required>
         </div>
         <div class="form-group">
           <label for="workerBio">Professional Bio & Experience</label>
@@ -513,7 +548,7 @@
         </div>
         <div class="form-group">
           <label for="workerPhoto">Upload Photo</label>
-          <input type="file" id="workerPhoto" accept="image/*" required>
+          <input type="file" id="workerPhoto" accept="image/*">
           <div class="photo-preview-wrapper">
             <div class="profile-photo-preview" id="photoPreview">📷</div>
             <span style="font-size:12px; color:var(--muted);">Upload a clear photo of yourself</span>
@@ -547,6 +582,21 @@
       { name:"Other", icon:"✨", count:"More services" }
     ];
 
+    let workers = [
+      {
+        name: "Emmanuel",
+        career: "Plumber & Pipefitter",
+        bio: "Experienced plumber specializing in pipe leak detection, bathroom fittings, and drainage maintenance.",
+        photo: ""
+      },
+      {
+        name: "Sarah W.",
+        career: "Professional Cleaning Specialist",
+        bio: "Over 4 years of experience in high-standard office and residential deep cleaning.",
+        photo: ""
+      }
+    ];
+
     let jobs = [
       { title:"Home cleaning needed", category:"Cleaning", icon:"🧹", desc:"Looking for help with a two-bedroom home.", price:"Budget: KSh 1,500", location:"Example listing · Kenya" },
       { title:"Local parcel delivery", category:"Delivery", icon:"📦", desc:"Need a reliable person to deliver a small parcel.", price:"Budget: KSh 500", location:"Example listing · Kenya" },
@@ -558,9 +608,11 @@
 
     let activeCategory = "All";
     let searchTerm = "";
+    let uploadedPhotoData = "";
 
     const categoryGrid = document.getElementById("categoryGrid");
     const jobGrid = document.getElementById("jobGrid");
+    const workerGrid = document.getElementById("workerGrid");
     const notice = document.getElementById("notice");
     const jobModal = document.getElementById("jobModal");
     const workerModal = document.getElementById("workerModal");
@@ -587,7 +639,7 @@
           }
         }
       } catch (error) {
-        // Fallback gracefully to default jobs list if backend API is offline
+        // Fallback gracefully
       }
       renderJobs();
     }
@@ -610,6 +662,36 @@
           document.getElementById("jobs").scrollIntoView({ behavior:"smooth" });
         });
         categoryGrid.appendChild(button);
+      });
+    }
+
+    function renderWorkers() {
+      workerGrid.innerHTML = "";
+      workers.forEach(w => {
+        const card = document.createElement("article");
+        card.className = "worker-card";
+        const avatarImg = w.photo 
+          ? `<img src="${w.photo}" class="worker-avatar" alt="${w.name}">` 
+          : `<div class="worker-avatar">${w.name.charAt(0)}</div>`;
+
+        card.innerHTML = `
+          <div class="worker-top">
+            ${avatarImg}
+            <div class="worker-title-info">
+              <h3>${w.name}</h3>
+              <div class="worker-career">${w.career}</div>
+            </div>
+          </div>
+          <p style="margin-top:14px;">${w.bio}</p>
+          <div class="jobmeta">
+            <span class="tag">Verified Worker</span>
+            <button class="btn primary hireBtn">Hire Worker →</button>
+          </div>
+        `;
+        card.querySelector(".hireBtn").addEventListener("click", () => {
+          showNotice(`Direct hiring requests for ${w.name} will be enabled in the next stage.`);
+        });
+        workerGrid.appendChild(card);
       });
     }
 
@@ -647,13 +729,12 @@
       document.getElementById("emptyState").hidden = filtered.length !== 0;
     }
 
-    // Modal Action Handlers
+    // Modal Handlers
     document.getElementById("postTop").addEventListener("click", openModal);
     document.getElementById("postHero").addEventListener("click", openModal);
     document.getElementById("closeModal").addEventListener("click", closeModal);
     jobModal.addEventListener("click", (e) => { if (e.target === jobModal) closeModal(); });
 
-    // Worker Modal Action Handlers
     document.getElementById("workerBtn").addEventListener("click", openWorkerModal);
     document.getElementById("joinBtn").addEventListener("click", openWorkerModal);
     document.getElementById("closeWorkerModal").addEventListener("click", closeWorkerModal);
@@ -666,27 +747,40 @@
       if (file) {
         const reader = new FileReader();
         reader.onload = function(event) {
-          preview.innerHTML = `<img src="${event.target.result}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+          uploadedPhotoData = event.target.result;
+          preview.innerHTML = `<img src="${uploadedPhotoData}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
         };
         reader.readAsDataURL(file);
       }
     });
 
-    // Submit Worker Form
+    // Register Worker Form Submission
     document.getElementById("workerForm").addEventListener("submit", (e) => {
       e.preventDefault();
-      const name = document.getElementById("workerName").value;
-      const career = document.getElementById("workerCareer").value;
+      const name = document.getElementById("workerName").value.trim();
+      const career = document.getElementById("workerCareer").value.trim();
+      const bio = document.getElementById("workerBio").value.trim();
+
+      workers.unshift({
+        name: name,
+        career: career,
+        bio: bio,
+        photo: uploadedPhotoData
+      });
+
+      renderWorkers();
       closeWorkerModal();
       document.getElementById("workerForm").reset();
       document.getElementById("photoPreview").innerHTML = "📷";
+      uploadedPhotoData = "";
+
       showNotice(`Success! Worker profile registered for ${name} (${career}).`);
+      document.getElementById("workers").scrollIntoView({ behavior: "smooth" });
     });
 
-    // Submit Job Form logic with API fallback
+    // Job Posting Logic
     document.getElementById("postJobForm").addEventListener("submit", async (e) => {
       e.preventDefault();
-      
       const title = document.getElementById("jobTitle").value.trim();
       const category = document.getElementById("jobCategory").value;
       const budget = document.getElementById("jobBudget").value.trim();
@@ -748,6 +842,7 @@
 
     document.getElementById("year").textContent = new Date().getFullYear();
     renderCategories();
+    renderWorkers();
     fetchJobs();
   </script>
 </body>
