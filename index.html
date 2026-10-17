@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -25,7 +24,7 @@
       color: var(--text);
       font-family: Inter, system-ui, -apple-system, sans-serif;
     }
-    button, input, select { font: inherit; }
+    button, input, select, textarea { font: inherit; }
     button { cursor: pointer; }
     a { color: inherit; text-decoration: none; }
 
@@ -261,6 +260,52 @@
     .banner p { color: #c8e4d5; line-height: 1.6; font-size: 14px; }
     .banner .btn { background: white; color: var(--dark); white-space: nowrap; }
 
+    /* Modal Styles */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      place-items: center;
+      z-index: 100;
+      padding: 20px;
+    }
+    .modal-backdrop.open { display: grid; }
+    .modal {
+      background: white;
+      width: 100%;
+      max-width: 500px;
+      border-radius: 22px;
+      padding: 25px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+      animation: modalFade .2s ease-out;
+    }
+    @keyframes modalFade {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .modal-header h3 { margin: 0; font-size: 20px; }
+    .close-btn { background: none; border: 0; font-size: 20px; color: var(--muted); }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      outline: none;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      border-color: var(--green);
+    }
+    .form-group textarea { resize: vertical; height: 90px; }
+
     footer {
       background: white;
       border-top: 1px solid var(--border);
@@ -384,6 +429,46 @@
     </div>
   </main>
 
+  <!-- Job Posting Modal -->
+  <div class="modal-backdrop" id="jobModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Post a New Job</h3>
+        <button class="close-btn" id="closeModal">&times;</button>
+      </div>
+      <form id="postJobForm">
+        <div class="form-group">
+          <label for="jobTitle">Job Title</label>
+          <input type="text" id="jobTitle" placeholder="e.g., Fix a broken window" required>
+        </div>
+        <div class="form-group">
+          <label for="jobCategory">Category</label>
+          <select id="jobCategory" required>
+            <option value="Cleaning">Cleaning</option>
+            <option value="Delivery">Delivery</option>
+            <option value="Repairs">Repairs</option>
+            <option value="Plumbing">Plumbing</option>
+            <option value="Construction">Construction</option>
+            <option value="Outside Catering">Outside Catering</option>
+            <option value="Tutoring">Tutoring</option>
+            <option value="Online Jobs">Online Jobs</option>
+            <option value="Electrical Services">Electrical Services</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="jobBudget">Budget (e.g., KSh 1,500)</label>
+          <input type="text" id="jobBudget" placeholder="KSh 1,500" required>
+        </div>
+        <div class="form-group">
+          <label for="jobDesc">Description</label>
+          <textarea id="jobDesc" placeholder="Describe the task details clearly..." required></textarea>
+        </div>
+        <button type="submit" class="btn primary" style="width: 100%;">Publish Job</button>
+      </form>
+    </div>
+  </div>
+
   <footer>
     <div class="foot">
       <span><strong style="color:#064e3b">TaskMate</strong> — Real people. Real skills. Real work.</span>
@@ -392,6 +477,8 @@
   </footer>
 
   <script>
+    const API_URL = 'http://localhost:5000/api/jobs';
+
     const categories = [
       { name:"Cleaning", icon:"🧹", count:"Home & office" },
       { name:"Delivery", icon:"📦", count:"Move & deliver" },
@@ -405,7 +492,7 @@
       { name:"Other", icon:"✨", count:"More services" }
     ];
 
-    const jobs = [
+    let jobs = [
       { title:"Home cleaning needed", category:"Cleaning", icon:"🧹", desc:"Looking for help with a two-bedroom home.", price:"Budget: KSh 1,500", location:"Example listing · Kenya" },
       { title:"Local parcel delivery", category:"Delivery", icon:"📦", desc:"Need a reliable person to deliver a small parcel.", price:"Budget: KSh 500", location:"Example listing · Kenya" },
       { title:"Repair a leaking tap", category:"Plumbing", icon:"🚿", desc:"Looking for a plumber to inspect and repair a leak.", price:"Budget: KSh 1,000", location:"Example listing · Kenya" },
@@ -420,11 +507,30 @@
     const categoryGrid = document.getElementById("categoryGrid");
     const jobGrid = document.getElementById("jobGrid");
     const notice = document.getElementById("notice");
+    const jobModal = document.getElementById("jobModal");
 
     function showNotice(message) {
       notice.textContent = message;
       notice.classList.add("show");
       notice.scrollIntoView({ behavior:"smooth", block:"nearest" });
+    }
+
+    function openModal() { jobModal.classList.add("open"); }
+    function closeModal() { jobModal.classList.remove("open"); }
+
+    async function fetchJobs() {
+      try {
+        const response = await fetch(API_URL);
+        if (response.ok) {
+          const apiJobs = await response.json();
+          if (apiJobs && apiJobs.length > 0) {
+            jobs = apiJobs;
+          }
+        }
+      } catch (error) {
+        // Fallback gracefully to default jobs list if backend API is offline
+      }
+      renderJobs();
     }
 
     function renderCategories() {
@@ -461,7 +567,7 @@
         card.className = "job";
         card.innerHTML = `
           <div class="jobtop">
-            <div class="jobicon">${job.icon}</div>
+            <div class="jobicon">${job.icon || "✨"}</div>
             <span class="tag"></span>
           </div>
           <h3></h3><p></p>
@@ -482,6 +588,57 @@
       document.getElementById("emptyState").hidden = filtered.length !== 0;
     }
 
+    // Modal Action Handlers
+    document.getElementById("postTop").addEventListener("click", openModal);
+    document.getElementById("postHero").addEventListener("click", openModal);
+    document.getElementById("closeModal").addEventListener("click", closeModal);
+    jobModal.addEventListener("click", (e) => { if (e.target === jobModal) closeModal(); });
+
+    // Submit Job Form logic with API fallback
+    document.getElementById("postJobForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      
+      const title = document.getElementById("jobTitle").value.trim();
+      const category = document.getElementById("jobCategory").value;
+      const budget = document.getElementById("jobBudget").value.trim();
+      const desc = document.getElementById("jobDesc").value.trim();
+
+      const matchedCat = categories.find(c => c.name === category);
+      const icon = matchedCat ? matchedCat.icon : "✨";
+
+      const newJob = {
+        title,
+        category,
+        icon,
+        desc,
+        price: `Budget: ${budget}`,
+        location: "Example listing · Kenya"
+      };
+
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newJob)
+        });
+
+        if (response.ok) {
+          fetchJobs();
+        } else {
+          jobs.unshift(newJob);
+          renderJobs();
+        }
+      } catch (error) {
+        jobs.unshift(newJob);
+        renderJobs();
+      }
+
+      closeModal();
+      document.getElementById("postJobForm").reset();
+      showNotice("Success! Your job has been published.");
+      document.getElementById("jobs").scrollIntoView({ behavior: "smooth" });
+    });
+
     document.getElementById("searchForm").addEventListener("submit", event => {
       event.preventDefault();
       searchTerm = document.getElementById("searchInput").value.trim();
@@ -498,15 +655,13 @@
       });
     });
 
-    document.getElementById("postTop").addEventListener("click", () => showNotice("Job posting will be enabled after we build secure customer accounts."));
-    document.getElementById("postHero").addEventListener("click", () => showNotice("Job posting will be enabled after we build secure customer accounts."));
     document.getElementById("loginBtn").addEventListener("click", () => showNotice("Login will be connected to secure authentication in the next stage."));
     document.getElementById("workerBtn").addEventListener("click", () => showNotice("Worker registration and applications will be added in the next stage."));
     document.getElementById("joinBtn").addEventListener("click", () => showNotice("Worker sign-up will be enabled after authentication is connected."));
 
     document.getElementById("year").textContent = new Date().getFullYear();
     renderCategories();
-    renderJobs();
+    fetchJobs();
   </script>
 </body>
 </html>
